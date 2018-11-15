@@ -1,7 +1,8 @@
 
 控制节点 vip ip 192.168.218.3(管理网段)  , 192.168.208.3(外部访问) offline  
 
-影响
+影响  
+
 mysql, openstack(所有组件), haproxy, pacemaker , corosync
 
 未影响 memcache rabbitmq 
