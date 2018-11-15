@@ -1,20 +1,22 @@
 # 准备 #
 ## centos 7 master ##
 
-1. Disable SElinux in CentOS/RHEL 7
-/etc/selinux/config  
-SELINUX=disabled  
+1. Disable SElinux in CentOS/RHEL 7  
+  /etc/selinux/config  
+  SELINUX=disabled  
 
 2. Add OpenNebula Repositories
-~# cat << EOT > /etc/yum.repos.d/opennebula.repo
-[opennebula]
-name=opennebula
-baseurl=https://downloads.opennebula.org/repo/5.6/CentOS/7/x86_64
-enabled=1
-gpgkey=https://downloads.opennebula.org/repo/repo.key
-gpgcheck=1
-#repo_gpgcheck=1
-EOT~
+  ```
+  cat << EOT > /etc/yum.repos.d/opennebula.repo
+    [opennebula]
+    name=opennebula
+    baseurl=https://downloads.opennebula.org/repo/5.6/CentOS/7/x86_64
+    enabled=1
+    gpgkey=https://downloads.opennebula.org/repo/repo.key
+    gpgcheck=1
+    #repo_gpgcheck=1
+    EOT
+  ```
 
 3. Installing the Software
 yum install epel-release  
