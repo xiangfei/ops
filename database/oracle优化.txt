@@ -1,0 +1,227 @@
+    
+
+
+
+
+  下载LOFTER我的照片书  |
+reference http://space.itpub.net/8750110/viewspace-503297 
+Oracle在执行一个SQL之前,首先要分析一下语句的执行计划,然后再按执行计划去执行。分析语句的执行计划的工作是由优化器(Optimizer)来完成的。不同的情况,一条SQL可能有多种执行计划,但在某一时点,一定只有一种执行计划是最优的,花费时间是最少的。相信你一定会用Pl/sql Developer、Toad等工具去看一个语句的执行计划,不过你可能对Rule、Choose、First rows、All rows这几项有疑问,因为我当初也是这样的,那时我也疑惑为什么选了以上的不同的项,执行计划就变了?
+1、优化器的优化方式
+
+Oracle的优化器共有两种的优化方式,即基于规则的优化方式(Rule-Based Optimization,简称为RBO)和基于代价的优化方式(Cost-Based Optimization,简称为CBO)。
+A、RBO方式：优化器在分析SQL语句时,所遵循的是Oracle内部预定的一些规则。比如我们常见的,当一个where子句中的一列有索引时去走索引。
+B、CBO方式：依词义可知,它是看语句的代价(Cost)了,这里的代价主要指Cpu和内存。优化器在判断是否用这种方式时,主要参照的是表及索引的统计信息。统计信息给出表的大小 、有少行、每行的长度等信息。这些统计信息起初在库内是没有的,是你在做analyze后才出现的,很多的时侯过期统计信息会令优化器做出一个错误的执行计划,因些我们应及时更新这些信息。在Oracle8及以后的版本,Oracle列推荐用CBO的方式。
+
+我们要明了,不一定走索引就是优的 ,比如一个表只有两行数据,一次IO就可以完成全表的检索,而此时走索引时则需要两次IO,这时对这个表做全表扫描(full table scan)是最好的。
+
+2、优化器的优化模式(Optermizer Mode)
+
+优化模式包括Rule,Choose,First rows,All rows这四种方式,也就是我们以上所提及的。如下我解释一下：
+
+Rule:不用多说,即走基于规则的方式。
+
+Choolse:这是我们应观注的,默认的情况下Oracle用的便是这种方式。指的是当一个表或或索引有统计信息,则走CBO的方式,如果表或索引没统计信息,表又不是特别的小,而且相应的列有索引时,那么就走索引,走RBO的方式。
+
+First Rows:它与Choose方式是类似的,所不同的是当一个表有统计信息时,它将是以最快的方式返回查询的最先的几行,从总体上减少了响应时间。
+
+All Rows:也就是我们所说的Cost的方式,当一个表有统计信息时,它将以最快的方式返回表的所有的行,从总体上提高查询的吞吐量。没有统计信息则走基于规则的方式。
+
+相关参数可通过 show parameter optimi来查看
+
+3、如何设定选用哪种优化模式
+
+a、Instance级别
+
+我们可以通过在init<SID>.ora文件中设定OPTIMIZER_MODE=RULE、OPTIMIZER_MODE=CHOOSE、OPTIMIZER_MODE=FIRST_ROWS、OPTIMIZER_MODE=ALL_ROWS去选用3所提的四种方式,如果你没设定OPTIMIZER_MODE参数则默认用的是Choose这种方式。
+
+通过SQL>ALTER SYSTEM SET OPTIMIZER_MODE=<Mode>;来设定
+
+B、Sessions级别
+
+通过SQL> ALTER SESSION SET OPTIMIZER_MODE=<Mode>;来设定。
+
+C、语句级别
+
+这些需要用到Hint,比如:
+SQL> SELECT /*+ RULE */ a.userid,
+2 b.name,
+3 b.depart_name
+4 FROM tf_f_yhda a,
+5 tf_f_depart b
+6 WHERE a.userid=b.userid;
+
+4、为什么有时一个表的某个字段明明有索引,当观察一些语的执行计划确不走索引呢？如何解决呢 ？
+
+A、不走索引大体有以下几个原因
+♀你在Instance级别所用的是all_rows的方式
+♀你的表的统计信息(最可能的原因)
+♀你的表很小,上文提到过的,Oracle的优化器认为不值得走索引。
+B、解决方法
+♀可以修改init<SID>.ora中的OPTIMIZER_MODE这个参数,把它改为Rule或Choose,重起数据库。也可以使用4中所提的Hint.
+♀删除统计信息
+SQL>analyze table table_name delete statistics;
+♀表小不走索引是对的,不用调的。
+
+5、其它相关
+
+A、如何看一个表或索引是否是统计信息
+
+SQL>SELECT * FROM user_tables
+2 WHERE table_name=<table_name>
+3 AND num_rows is not null;
+
+SQL>SELECT * FROM user_indexes
+2 WHERE table_name=<table_name>
+3 AND num_rows is not null;
+
+b、如果我们先用CBO的方式,我们应及时去更新表和索引的统计信息,以免生形不切合实的执行计划。
+
+SQL> ANALYZE TABLE table_name COMPUTE STATISTICS;
+SQL> ANALYZE INDEX index_name ESTIMATE STATISTICS;
+
+1. /*+ALL_ROWS*/
+　　表明对语句块选择基于开销的优化方法,并获得最佳吞吐量,使资源消耗最小化.
+　　例如:
+　　SELECT /*+ALL+_ROWS*/ EMP_NO,EMP_NAM,DAT_IN FROM BSEMPMS WHERE EMP_NO='SCOTT'; 
+　　2. /*+FIRST_ROWS*/
+　　表明对语句块选择基于开销的优化方法,并获得最佳响应时间,使资源消耗最小化.
+　　例如:
+　　SELECT /*+FIRST_ROWS*/ EMP_NO,EMP_NAM,DAT_IN FROM BSEMPMS WHERE EMP_NO='SCOTT';
+　　3. /*+CHOOSE*/
+　　表明如果数据字典中有访问表的统计信息,将基于开销的优化方法,并获得最佳的吞吐量;
+　　表明如果数据字典中没有访问表的统计信息,将基于规则开销的优化方法;
+　　例如:
+　　SELECT /*+CHOOSE*/ EMP_NO,EMP_NAM,DAT_IN FROM BSEMPMS WHERE EMP_NO='SCOTT';
+
+　　4. /*+RULE*/
+　　表明对语句块选择基于规则的优化方法.
+　　例如:
+　　SELECT /*+ RULE */ EMP_NO,EMP_NAM,DAT_IN FROM BSEMPMS WHERE EMP_NO='SCOTT';
+
+　　5. /*+FULL(TABLE)*/
+　　表明对表选择全局扫描的方法.
+　　例如:
+　　SELECT /*+FULL(A)*/ EMP_NO,EMP_NAM FROM BSEMPMS A WHERE EMP_NO='SCOTT';
+
+　　6. /*+ROWID(TABLE)*/
+　　提示明确表明对指定表根据ROWID进行访问.
+　　例如:
+　　SELECT /*+ROWID(BSEMPMS)*/ * FROM BSEMPMS WHERE ROWID>='AAAAAAAAAAAAAA'
+　　AND EMP_NO='SCOTT';
+
+　　7. /*+CLUSTER(TABLE)*/ 
+　　提示明确表明对指定表选择簇扫描的访问方法,它只对簇对象有效.
+　　例如:
+　　SELECT /*+CLUSTER */ BSEMPMS.EMP_NO,DPT_NO FROM BSEMPMS,BSDPTMS
+　　WHERE DPT_NO='TEC304' AND BSEMPMS.DPT_NO=BSDPTMS.DPT_NO;
+
+　　8. /*+INDEX(TABLE INDEX_NAME)*/
+　　表明对表选择索引的扫描方法.
+　　例如:
+　　SELECT /*+INDEX(BSEMPMS SEX_INDEX) USE SEX_INDEX BECAUSE THERE ARE FEWMALE BSEMPMS */ FROM BSEMPMS WHERE SEX='M';
+
+　　9. /*+INDEX_ASC(TABLE INDEX_NAME)*/
+　　表明对表选择索引升序的扫描方法.
+　　例如:
+　　SELECT /*+INDEX_ASC(BSEMPMS PK_BSEMPMS) */ FROM BSEMPMS WHERE DPT_NO='SCOTT';
+
+　　10. /*+INDEX_COMBINE*/
+　　为指定表选择位图访问路经,如果INDEX_COMBINE中没有提供作为参数的索引,将选择出位图索引的布尔组合方式.
+　　例如:
+　　SELECT /*+INDEX_COMBINE(BSEMPMS SAL_BMI HIREDATE_BMI)*/ * FROM BSEMPMS
+　　WHERE SAL<5000000 AND HIREDATE
+
+　　11. /*+INDEX_JOIN(TABLE INDEX_NAME)*/
+　　提示明确命令优化器使用索引作为访问路径.
+　　例如:
+　　SELECT /*+INDEX_JOIN(BSEMPMS SAL_HMI HIREDATE_BMI)*/ SAL,HIREDATE
+　　FROM BSEMPMS WHERE SAL<60000;
+
+　　12. /*+INDEX_DESC(TABLE INDEX_NAME)*/
+　　表明对表选择索引降序的扫描方法.
+　　例如:
+　　SELECT /*+INDEX_DESC(BSEMPMS PK_BSEMPMS) */ FROM BSEMPMS WHERE DPT_NO='SCOTT';
+
+　　13. /*+INDEX_FFS(TABLE INDEX_NAME)*/
+　　对指定的表执行快速全索引扫描,而不是全表扫描的办法.
+　　例如:
+　　SELECT /*+INDEX_FFS(BSEMPMS IN_EMPNAM)*/ * FROM BSEMPMS WHERE DPT_NO='TEC305';
+
+　　14. /*+ADD_EQUAL TABLE INDEX_NAM1,INDEX_NAM2,...*/
+　　提示明确进行执行规划的选择,将几个单列索引的扫描合起来.
+　　例如:
+　　SELECT /*+INDEX_FFS(BSEMPMS IN_DPTNO,IN_EMPNO,IN_SEX)*/ * FROM BSEMPMS WHERE EMP_NO='SCOTT' AND DPT_NO='TDC306';
+
+　　15. /*+USE_CONCAT*/
+　　对查询中的WHERE后面的OR条件进行转换为UNION ALL的组合查询.
+　　例如:
+　　SELECT /*+USE_CONCAT*/ * FROM BSEMPMS WHERE DPT_NO='TDC506' AND SEX='M';
+
+　　16. /*+NO_EXPAND*/
+　　对于WHERE后面的OR 或者IN-LIST的查询语句,NO_EXPAND将阻止其基于优化器对其进行扩展.
+　　例如:
+　　SELECT /*+NO_EXPAND*/ * FROM BSEMPMS WHERE DPT_NO='TDC506' AND SEX='M';
+
+　　17. /*+NOWRITE*/
+　　禁止对查询块的查询重写操作.
+
+　　18. /*+REWRITE*/
+　　可以将视图作为参数.
+
+　　19. /*+MERGE(TABLE)*/
+　　能够对视图的各个查询进行相应的合并.
+　　例如:
+　　SELECT /*+MERGE(V) */ A.EMP_NO,A.EMP_NAM,B.DPT_NO FROM BSEMPMS A (SELET DPT_NO
+　　,AVG(SAL) AS AVG_SAL FROM BSEMPMS B GROUP BY DPT_NO) V WHERE A.DPT_NO=V.DPT_NO
+　　AND A.SAL>V.AVG_SAL;
+
+　　20. /*+NO_MERGE(TABLE)*/
+　　对于有可合并的视图不再合并.
+　　例如:
+　　SELECT /*+NO_MERGE(V) */ A.EMP_NO,A.EMP_NAM,B.DPT_NO FROM BSEMPMS A (SELECT DPT_NO,AVG(SAL) AS AVG_SAL FROM BSEMPMS B GROUP BY DPT_NO) V WHERE A.DPT_NO=V.DPT_NO AND A.SAL>V.AVG_SAL;
+
+　　21. /*+ORDERED*/
+　　根据表出现在FROM中的顺序,ORDERED使ORACLE依此顺序对其连接.
+　　例如:
+　　SELECT /*+ORDERED*/ A.COL1,B.COL2,C.COL3 FROM TABLE1 A,TABLE2 B,TABLE3 C WHERE A.COL1=B.COL1 AND B.COL1=C.COL1;
+
+　　22. /*+USE_NL(TABLE)*/
+　　将指定表与嵌套的连接的行源进行连接,并把指定表作为内部表.
+　　例如:
+　　SELECT /*+ORDERED USE_NL(BSEMPMS)*/ BSDPTMS.DPT_NO,BSEMPMS.EMP_NO,BSEMPMS.EMP_NAM FROM BSEMPMS,BSDPTMS WHERE BSEMPMS.DPT_NO=BSDPTMS.DPT_NO;
+
+　　23. /*+USE_MERGE(TABLE)*/
+　　将指定的表与其他行源通过合并排序连接方式连接起来.
+　　例如:
+　　SELECT /*+USE_MERGE(BSEMPMS,BSDPTMS)*/ * FROM BSEMPMS,BSDPTMS WHERE BSEMPMS.DPT_NO=BSDPTMS.DPT_NO;
+
+　　24. /*+USE_HASH(TABLE)*/
+　　将指定的表与其他行源通过哈希连接方式连接起来.
+　　例如:
+　　SELECT /*+USE_HASH(BSEMPMS,BSDPTMS)*/ * FROM BSEMPMS,BSDPTMS WHERE BSEMPMS.DPT_NO=BSDPTMS.DPT_NO;
+
+　　25. /*+DRIVING_SITE(TABLE)*/
+　　强制与ORACLE所选择的位置不同的表进行查询执行.
+　　例如:
+　　SELECT /*+DRIVING_SITE(DEPT)*/ * FROM BSEMPMS,DEPT@BSDPTMS WHERE BSEMPMS.DPT_NO=DEPT.DPT_NO;
+
+　　26. /*+LEADING(TABLE)*/
+　　将指定的表作为连接次序中的首表.
+
+　　27. /*+CACHE(TABLE)*/
+　　当进行全表扫描时,CACHE提示能够将表的检索块放置在缓冲区缓存中最近最少列表LRU的最近使用端
+　　例如:
+　　SELECT /*+FULL(BSEMPMS) CAHE(BSEMPMS) */ EMP_NAM FROM BSEMPMS;
+
+　　28. /*+NOCACHE(TABLE)*/
+　　当进行全表扫描时,CACHE提示能够将表的检索块放置在缓冲区缓存中最近最少列表LRU的最近使用端
+　　例如:
+　　SELECT /*+FULL(BSEMPMS) NOCAHE(BSEMPMS) */ EMP_NAM FROM BSEMPMS;
+
+　　29. /*+APPEND*/
+　　直接插入到表的最后,可以提高速度.
+　　insert /*+append*/ into test1 select * from test4 ;
+
+　　30. /*+NOAPPEND*/
+　　通过在插入语句生存期内停止并行模式来启动常规插入.
+　　insert /*+noappend*/ into test1 select * from test4 ;

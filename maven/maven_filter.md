@@ -1,0 +1,64 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.xf.maven</groupId>
+  <artifactId>first_filter_project</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>first_filter_project</name>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.test.skip>true</maven.test.skip>
+    <filter.file>resources/ttt.properties</filter.file>
+  </properties>
+   
+        <build>
+                <finalName>lsmp-setting</finalName>
+                <filters>
+                        <filter>${filter.file}</filter>
+                </filters>
+                <resources>
+                        <resource>
+                                <directory>src/main/resources</directory>
+                                <filtering>true</filtering>
+                        </resource>
+                </resources>
+                <plugins>
+                        <plugin>
+                                <artifactId>maven-compiler-plugin</artifactId>
+                                <configuration>
+                                        <source>1.6</source>
+                                        <target>1.6</target>
+                                        <encoding>UTF-8</encoding>
+                                </configuration>
+                        </plugin>
+                        <plugin>
+                                <groupId>org.apache.maven.plugins</groupId>
+                                <artifactId>maven-resources-plugin</artifactId>
+                                <configuration>
+                                        <encoding>UTF-8</encoding>
+                                </configuration>
+                        </plugin>
+                </plugins>
+        </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+src/main/resources
+ demo.properties 
+ a=${bbb}
+
+resources
+ttt.properties
+bbb=123
