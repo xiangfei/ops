@@ -6,7 +6,7 @@
 SELINUX=disabled  
 
 2. Add OpenNebula Repositories
-# cat << EOT > /etc/yum.repos.d/opennebula.repo
+~# cat << EOT > /etc/yum.repos.d/opennebula.repo
 [opennebula]
 name=opennebula
 baseurl=https://downloads.opennebula.org/repo/5.6/CentOS/7/x86_64
@@ -14,7 +14,7 @@ enabled=1
 gpgkey=https://downloads.opennebula.org/repo/repo.key
 gpgcheck=1
 #repo_gpgcheck=1
-EOT
+EOT~
 
 3. Installing the Software
 yum install epel-release  
