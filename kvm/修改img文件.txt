@@ -1,10 +1,15 @@
 ubuntu 系统
 
 apt-get intall kpartx
+
 apt-get install qemu-utils
+
 modprobe nbd max_part=8
+
 qemu-nbd -c /dev/nbd0 /var/lib/one/datastores/0/7/opendaylight.qcow2 
+
 mount /dev/nbd0p1 /mnt/
+
 umount /mnt
 
 qemu-nbd  -d  /dev/nbd0
@@ -16,11 +21,14 @@ cat /etc/redhat-release
 #-> CentOS Linux release 7.4.1708 (Core)
 
 查看自己内核版本
-uname -r       #-> 3.10.0-693.el7.x86_64
 
- 
+uname -r       
+
+#-> 3.10.0-693.el7.x86_64
+
 
  开始安装编译模块
+
 yum install kernel-devel kernel-headers
 
 cd /tmp
@@ -63,10 +71,15 @@ depmod -a
 Guestfish
 
 guestfish --rw -a centos63_desktop.img
+
 run
+
 list-filesystems
+
 mount /dev/vg_centosbase/lv_root /
+
 rm /etc/udev/rules.d/70-persistent-net.rules
+
 edit /etc/sysconfig/network-scripts/ifcfg-eth0
 
 exit
