@@ -1,0 +1,31 @@
+<build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-ear-plugin</artifactId>
+        <version>2.3.2</version>
+        <configuration>
+          <defaultJavaBundleDir>lib/</defaultJavaBundleDir>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+ <dependencies>
+    <dependency>
+      <groupId>com.acme</groupId>
+      <artifactId>shared-jar</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.acme</groupId>
+      <artifactId>war1</artifactId>
+      <version>1.0.0</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>com.acme</groupId>
+      <artifactId>war2</artifactId>
+      <version>1.0.0</version>
+      <type>war</type>
+    </dependency>
+  </dependencies>
